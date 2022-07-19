@@ -7,7 +7,7 @@ import numpy as np
 import requests
 import os
 
-df = requests.get('https://credits-ocr-flaskapi.herokuapp.com//get_data/').json()
+df = requests.get('https://credits-ocr-flaskapi.herokuapp.com/get_data/').json()
 df = pd.DataFrame(df)
 
 predicts = requests.post('https://credits-ocr-flaskapi.herokuapp.com//predict/', data={'id': 'all'}).json()
