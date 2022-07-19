@@ -4,3 +4,4 @@ dash
 sklearn
 pandas
 numpy
+requests
