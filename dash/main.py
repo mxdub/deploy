@@ -21,6 +21,8 @@ app = Dash(
     #meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 
+server = app.server
+
 app.title = "Testing DASh ! "
 
 app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
