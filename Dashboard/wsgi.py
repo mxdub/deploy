@@ -1,5 +1,5 @@
 from app.main import app
+server = app.server
 
 if __name__ == "__main__":
-	server = app.server
 	app.run()
