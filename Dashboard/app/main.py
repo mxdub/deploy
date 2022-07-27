@@ -2,19 +2,24 @@
 from dash import Dash, dash_table, dcc, html
 from dash.dependencies import Input, Output, State
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import requests
 import os
 
-# df = requests.get('http://127.0.0.1:5000/get_data/').json()
-df = requests.get('https://credits-ocr-flaskapi.herokuapp.com/get_data/').json()
-df = pd.DataFrame(df)
+path = 'https://credits-ocr-flaskapi.herokuapp.com/'
+path = 'http://127.0.0.1:5000/'
 
-# predicts = requests.post('http://127.0.0.1:5000/predict/', data={'id': 'all'}).json()
-predicts = requests.post('https://credits-ocr-flaskapi.herokuapp.com/predict/', data={'id': 'all'}).json()
-predicts = pd.Series(predicts, name = 'predictions')
+predicts = requests.get(path + 'predict/').json()
+predicts = pd.DataFrame(predicts)
 
+df_unscaled = requests.get(path + 'get_data/').json()
+df_unscaled = pd.DataFrame(df_unscaled)
+
+sk_id_curr = sorted(list(requests.get(path + 'get_idx/').json().values()))
+
+stats = pd.DataFrame(requests.get(path + 'get_stats/').json())
 
 GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 5000)
 
@@ -25,10 +30,11 @@ app = Dash(
 
 server = app.server
 
-app.title = "Testing DASh !! "
+app.title = "Credit Scoring"
 
 app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
-
+min_v_feats, max_v_feats, step_feats = 0, 30, 1
+                                                
 app.layout = html.Div(
     [
         # header
@@ -44,60 +50,108 @@ app.layout = html.Div(
                     ],
                     className="app__header__desc",
                 ),
-                html.Div(
-                    [
-                        html.A(
-                            html.Button("SOURCE CODE", className="link-button"),
-                            href="https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-wind-streaming",
-                        ),
-                        html.A(
-                            html.Button("ENTERPRISE DEMO", className="link-button"),
-                            href="https://plotly.com/get-demo/",
-                        ),
-                        html.A(
-                            html.Img(
-                                src=app.get_asset_url("dash-new-logo.png"),
-                                className="app__menu__img",
-                            ),
-                            href="https://plotly.com/dash/",
-                        ),
-                    ],
-                    className="app__header__logo",
-                ),
+                # html.Div(
+                #     [
+                #         html.A(
+                #             html.Button("SOURCE CODE", className="link-button"),
+                #             href="https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-wind-streaming",
+                #         ),
+                #         html.A(
+                #             html.Button("ENTERPRISE DEMO", className="link-button"),
+                #             href="https://plotly.com/get-demo/",
+                #         ),
+                #         html.A(
+                #             html.Img(
+                #                 src=app.get_asset_url("dash-new-logo.png"),
+                #                 className="app__menu__img",
+                #             ),
+                #             href="https://plotly.com/dash/",
+                #         ),
+                #     ],
+                #     className="app__header__logo",
+                # ),  
             ],
             className="app__header",
         ),
         html.Div(
             [
-                # wind speed
-                html.Div(
-                    [
+                dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', 
+                    parent_className = 'custom-tabs-parents two-thirds column', 
+                    className='custom-tabs-container',
+                    children=[
+                    dcc.Tab(label='Client infos.', className='custom-tab', children = [
+                        # wind speed
                         html.Div(
                             [
                                 html.Div(
-                                    [html.H6("WIND SPEED (MPH)", className="graph__title"), html.H6("WIND SPEED (MPH)", className="graph__title")]
+                                    [
+                                        html.Div(
+                                            [
+                                                html.H6("Top # feat. to display", 
+                                                    className="parameters__style"),
+                                                html.Div([ dcc.Slider(id="n_features", 
+                                                    min = min_v_feats, max = max_v_feats, value = 10, step = step_feats,
+                                                    marks = {v:str(v) for v in range(min_v_feats, max_v_feats+1, step_feats) if v % 5 == 0 },
+                                                    tooltip={"placement": "bottom", "always_visible": True}) ]),                                        
+                                            ], className="parameters__choice__subbox"),
+                                        # html.Div(
+                                        #     [
+                                        #         []
+                                        #     ], className="parameters__choice__subbox" ),
+                                    ], className="parameters__choice__box"
                                 ),
-                                html.Div([html.H6("WIND SPEED (MPH)", className="graph__title")]
-                                )
+                                dcc.Graph(
+                                    id="local-importance",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [html.H6('Compare to others', className="graph__title__bis")], 
+                                            className="subtitle-band"
+                                        ),
+                                        html.Div(
+                                            [
+                                            ], 
+                                            id = "multiple_hist_div", 
+                                            className="multiple_histo_container"
+                                        )
+                                    ]
+                                ),
                             ],
+                            className="column wind__speed__container",
                         ),
-                        dcc.Graph(
-                            id="wind-speed",
-                            # figure=dict(
-                            #     layout=dict(
-                            #         plot_bgcolor=app_color["graph_bg"],
-                            #         paper_bgcolor=app_color["graph_bg"],
-                            #     )
-                            # ),
-                        ),
-                        # dcc.Interval(
-                        #     id="wind-speed-update",
-                        #     interval=int(GRAPH_INTERVAL),
-                        #     n_intervals=0,
-                        # ),
-                    ],
-                    className="two-thirds column wind__speed__container",
-                ),
+                    ]),
+                    dcc.Tab(label='Gestion du risque', className='custom-tab', children = [
+                        html.Div(
+                            [   
+                                html.Div(
+                                        [   
+                                            html.Div(
+                                                [
+                                                    html.H6("beta value (f-score)", 
+                                                        className="parameters__style"),
+                                                    html.Div([ dcc.Slider(id="beta_fscore", 
+                                                        min = 0, max = 5, value = 2,
+                                                        tooltip={"placement": "bottom", "always_visible": True}) ]),
+                                                ], className="parameters__choice__subbox"),
+                                            html.Div([
+                                                    html.H6("Selected threshold", 
+                                                        className="parameters__style"),
+                                                    html.Div([ dcc.Slider(id="threshold_choice", 
+                                                        min = 0, max = 1, value = 0.08,
+                                                        updatemode="drag",
+                                                        tooltip={"placement": "bottom", "always_visible": True}) ]),
+                                                ], className="parameters__choice__subbox"),
+                                        ], className="parameters__choice__box"
+                                    ),
+
+                                dcc.Graph(
+                                    id="risk_gestion_graph"
+                                    ),
+                            ], className="column wind__speed__container")
+                    ])
+                ]),
+
                 html.Div(
                     [
                         # histogram
@@ -108,81 +162,41 @@ app.layout = html.Div(
                                         html.H6(
                                             "Customer ID",
                                             className="graph__title",
-                                        )
-                                    ]
-                                ),
-                                html.Div(
-                                    [
-                                        dcc.Dropdown(list(df.index),list(df.index)[-1],id='id_client')
-                                        # dcc.Slider(
-                                        #     id="bin-slider",
-                                        #     min=1,
-                                        #     max=60,
-                                        #     step=1,
-                                        #     value=20,
-                                        #     updatemode="drag",
-                                        #     marks={
-                                        #         20: {"label": "20"},
-                                        #         40: {"label": "40"},
-                                        #         60: {"label": "60"},
-                                        #     },
-                                        # )
+                                        ),
+                                        html.Div([
+                                            dcc.Dropdown(sk_id_curr, sk_id_curr[0], id='id_client',)
+                                        ], className = "dropdown"),
                                     ],
-                                    className="dropdown",
+                                    className="customer-id-choice",
                                 ),
-                                # html.Div(
-                                #     [
-                                #         dcc.Checklist(
-                                #             id="bin-auto",
-                                #             options=[
-                                #                 {"label": "Auto", "value": "Auto"}
-                                #             ],
-                                #             value=["Auto"],
-                                #             inputClassName="auto__checkbox",
-                                #             labelClassName="auto__label",
-                                #         ),
-                                #         html.P(
-                                #             "# of Bins: Auto",
-                                #             id="bin-size",
-                                #             className="auto__p",
-                                #         ),
-                                #     ],
-                                #     className="auto__container",
-                                # ),
                                 dcc.Graph(
-                                    id="wind-histogram",
-                                    # figure=dict(
-                                    #     layout=dict(
-                                    #         plot_bgcolor=app_color["graph_bg"],
-                                    #         paper_bgcolor=app_color["graph_bg"],
-                                    #     )
-                                    # ),
+                                    id="predict_distrib",
                                 ),
                             ],
                             className="graph__container first",
                         ),
                         # wind direction
-                        html.Div(
-                            [
-                                html.Div(
-                                    [
-                                        html.H6(
-                                            "WIND DIRECTION", className="graph__title"
-                                        )
-                                    ]
-                                ),
-                                dcc.Graph(
-                                    id="wind-direction",
-                                    figure=dict(
-                                        layout=dict(
-                                            plot_bgcolor=app_color["graph_bg"],
-                                            paper_bgcolor=app_color["graph_bg"],
-                                        )
-                                    ),
-                                ),
-                            ],
-                            className="graph__container second",
-                        ),
+                        # html.Div(
+                        #     [
+                        #         html.Div(
+                        #             [
+                        #                 html.H6(
+                        #                     "WIND DIRECTION", className="graph__title"
+                        #                 )
+                        #             ]
+                        #         ),
+                        #         dcc.Graph(
+                        #             id="wind-direction",
+                        #             figure=dict(
+                        #                 layout=dict(
+                        #                     plot_bgcolor=app_color["graph_bg"],
+                        #                     paper_bgcolor=app_color["graph_bg"],
+                        #                 )
+                        #             ),
+                        #         ),
+                        #     ],
+                        #     className="graph__container second",
+                        # ),
                     ],
                     className="one-third column histogram__direction",
                 ),
@@ -194,27 +208,55 @@ app.layout = html.Div(
 )
 
 @app.callback(
-    Output("wind-speed", "figure"), [Input("id_client", "value")]
+    Output("local-importance", "figure"), 
+    Input("id_client", "value"),
+    Input("n_features","value")
 )
-def plot_data(id):
+def plot_local_importance(id, n_features):
     """
     blabla
     """
 
-    mask = np.zeros(df.shape[0])
-    mask[int(id)] = 1
-    fig = px.scatter(df, x = 'x1', y = 'y', hover_name=df.index ,
-        color = mask.astype('str'), 
-        size = mask + 1,
-        color_discrete_map={"0.0": "blue","1.0": "red",},
-        )
+    ## START block
+    ## Works here - but note the extracted features (names) have to be used elsewhere
+    ## This piece of code will be reused in another callback, using Dcc.store() to store the intermediate results
+    ## might be a good solution to avoid running this twice but as it doen't take a while, let it as it is for now.
+
+    rqst = requests.post(path + 'get_shaps/', {'id':id}).json()
+    feat_imp = pd.DataFrame(rqst['shap_data']).sort_values('shap_values', key=abs)
+    feat_imp_summary = feat_imp.iloc[-n_features:,:].copy()
+    feature_names_list = list(feat_imp_summary.feature_names)
+    
+    ## END block
+    # Gather unscaled features values
+    unscaled_features_dict = {k:list(v.values())[0] for (k,v) in df_unscaled[df_unscaled.SK_ID_CURR == id].to_dict().items() if k in feature_names_list}
+    
+    feat_imp_summary.feature_names = [ '{:.2f} - {}'.format(unscaled_features_dict[v], v) for v in feat_imp_summary.feature_names]
+
+    new_row = pd.DataFrame({'data':None, 'feature_names':'others', 'shap_values':sum(feat_imp.iloc[0:-n_features:,:].shap_values)}, index=[0])
+    feat_imp_summary = pd.concat([new_row, feat_imp_summary])
+
+    shap_base = rqst['base_value']
+
+    fig = go.Figure(go.Waterfall(
+        orientation = "h", 
+        y = feat_imp_summary.feature_names,
+        x = feat_imp_summary.shap_values,
+        base = shap_base,
+        connector = {"mode":"between", "line":{"width":4, "color":"rgb(0, 0, 0)", "dash":"solid"}},
+        decreasing = {"marker":{"color":"#7BCD7B"}},
+        increasing = {"marker":{"color":"#E06B6B"}},
+    ))
+
+    fig.add_vline(x=shap_base, line_dash = 'dash', line_color = 'grey')
 
     fig.update_layout(    
         dict(
+            title = 'Most important features',
             plot_bgcolor=app_color["graph_bg"],
             paper_bgcolor=app_color["graph_bg"],
             font={"color": "#fff"},
-            # height=700,
+            height=500,
             showlegend=False,
             xaxis={
                 # "range": [0, 1],
@@ -232,36 +274,171 @@ def plot_data(id):
                 # "fixedrange": True,
                 "zeroline": False,
                 "gridcolor": app_color["graph_line"],
-                "nticks": 6,
+                # "nticks": 6,
             },
         )
     )
 
     return fig
 
-
 @app.callback(
-    Output("wind-histogram", "figure"), [Input("id_client", "value")]
+    Output("risk_gestion_graph", "figure"), 
+    Input("beta_fscore", "value"),
+    Input("threshold_choice", "value")
 )
-def hist_probs(id):
-    """
-    blabla
-    """
+def risk_plot(beta, thresh):
 
-    mask = np.zeros(df.shape[0])
-    mask[int(id)] = 1
-    fig = px.histogram(predicts, x = 'predictions', histnorm = 'percent', nbins = 20)
-    
-    fig.add_vline(x=predicts[int(id)], line_dash = 'dash', line_color = 'white')
+    stats_tm = stats.copy()
+
+    stats_tm['beta'] = (1+beta**2)*stats['tp'] / ((1+beta**2)*stats['tp'] + beta**2 * stats['fn'] + stats['fp'])
+    stats_tm['fp'] = stats_tm['fp'] / (stats_tm['fp'] + stats_tm['tn'])
+    stats_tm['fn'] = stats_tm['fn'] / (stats_tm['fn'] + stats_tm['tp'])
+    stats_tm.drop(columns = ['tn', 'tp'], inplace = True)
+    stats_tm.drop(columns = ['precision', 'recall'], inplace = True)
+
+    stats_tm = pd.melt(stats_tm, id_vars='threshold')
+
+    fig = px.scatter(stats_tm, 
+                        x="threshold", 
+                        y="value", 
+                        color="variable",
+                        title="Model statistics")
+
+    fig.add_vline(x=thresh, line_dash = 'dash', line_color = 'white', line_width=3.5)
 
     fig.update_layout(    
         dict(
             plot_bgcolor=app_color["graph_bg"],
             paper_bgcolor=app_color["graph_bg"],
             font={"color": "#fff"},
-            # height=700,
+            height=400,
             xaxis={
                 "range": [0, 1],
+                "showline": True,
+                "zeroline": False,
+                "fixedrange": True,
+                # "tickvals": [0, 50, 100, 150, 200],
+                # "ticktext": ["200", "150", "100", "50", "0"],
+                "title": "Threshold",
+            },
+            yaxis={
+                # "range": [0,100,],
+                "showgrid": True,
+                "showline": True,
+                # "fixedrange": True,
+                "zeroline": False,
+                "gridcolor": app_color["graph_line"],
+                "nticks": 6,
+                "title":'',
+            },
+        )
+    )
+
+    return fig
+
+@app.callback(
+    Output("multiple_hist_div", "children"),
+    Input("id_client", "value"),
+    Input("n_features","value")
+)
+def populate_hist_div(id, n_features):
+
+    rqst = requests.post(path + 'get_shaps/', {'id':id}).json()
+    feat_imp = pd.DataFrame(rqst['shap_data']).sort_values('shap_values', key=abs)
+    feat_imp_summary = feat_imp.iloc[-n_features:,:].copy()
+    feature_names_list = list(feat_imp_summary.feature_names)
+    unscaled_features_dict = {k:list(v.values())[0] for (k,v) in df_unscaled[df_unscaled.SK_ID_CURR == id].to_dict().items() if k in feature_names_list}
+
+    boxes_hist = []
+    for feat in reversed(feature_names_list):
+        subset = df_unscaled[ ['SK_ID_CURR', feat, 'TARGET'] ]
+        # subset = df_unscaled[ [feat, ] ]
+        
+        focal_value = subset[subset.SK_ID_CURR == id]
+        focal_value = focal_value[feat][0]
+
+        fig = px.histogram(subset, x = feat, color="TARGET", nbins = 50, histnorm = 'percent', opacity = 0.5, 
+                           barmode="overlay", color_discrete_map = {0:'#7BCD7B',1:'#E06B6B'})
+
+        if not np.isnan(focal_value):
+            fig.add_vline(x=focal_value, line_dash = 'dash', line_color = 'white')
+
+        fig.update_layout(    
+            dict(
+                title = feat,
+                plot_bgcolor=app_color["graph_bg"],
+                paper_bgcolor=app_color["graph_bg"],
+                font={"color": "#fff"},
+                font_size=10,
+                height=300,
+                width=400,
+                showlegend=False,
+                xaxis={
+                    "showline": True,
+                    "zeroline": False,
+                    "fixedrange": True,
+                    # "title": feat,
+                },
+                xaxis_title=None,
+                yaxis={
+                    "showgrid": True,
+                    "showline": True,
+                    "zeroline": False,
+                    "gridcolor": app_color["graph_line"],
+                    # "nticks": 6,
+                },
+            )
+        )
+        boxes_hist.append(dcc.Graph(figure = fig))
+    return boxes_hist
+
+@app.callback(
+    Output("predict_distrib", "figure"), 
+    Input("id_client", "value"),
+    Input("threshold_choice","value")
+)
+def hist_probs(id, threshold):
+    """
+    blabla
+    """
+    
+
+    try:
+        focal_idx = list(predicts.SK_ID_CURR).index(id)
+    except ValueError:
+        print("Not a valid index !")
+
+    mask = np.zeros(len(predicts.SK_ID_CURR))
+    mask[focal_idx] = 1
+
+
+    preds_2 = predicts.copy()
+
+    def logit(x):
+        return np.log(x/(1-x))
+
+    preds_2.probs = [logit(x) for x in predicts.probs]
+    # preds_2.probs = [(x) for x in predicts.probs]
+    
+    preds_2['color'] = preds_2.probs < logit(threshold)
+    # preds_2['color'] = preds_2.probs < (threshold)
+    preds_2.color = ['Accepted' if x else 'Rejected' for x in preds_2.color]
+
+    # fig = px.histogram(preds_2, x = 'probs', color="color", histnorm = 'percent', nbins = 50)
+    fig = px.histogram(preds_2, x = 'probs', color="color", nbins = 100, color_discrete_map = {'Accepted':'#7BCD7B',
+                                                                                               'Rejected':'#E06B6B'})
+
+    
+    fig.add_vline(x=preds_2.probs[focal_idx], line_dash = 'dash', line_color = 'white')
+
+    fig.update_layout(    
+        dict(
+            plot_bgcolor=app_color["graph_bg"],
+            paper_bgcolor=app_color["graph_bg"],
+            font={"color": "#fff"},
+            height=300,
+            xaxis={
+                "range": [-5, 3],
                 "showline": True,
                 "zeroline": False,
                 "fixedrange": True,

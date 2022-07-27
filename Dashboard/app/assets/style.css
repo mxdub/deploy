@@ -46,15 +46,53 @@ h6 {
 .graph__title {
     color: #fff !important;
     letter-spacing: 0.3rem !important;
-    padding: 25px 25px 10px 25px;
+    padding: 5%;
     margin-bottom: 0px !important;
-    font-size: 1em;
+}
+
+.graph__title__bis {
+    color: #fff !important;
+    letter-spacing: 0.3rem !important;
+    padding: 1%;
+    margin-bottom: 0px !important;
+}
+
+.parameters__style {
+    text-align: center;
+    color: #fff;
+}
+
+.parameters__choice__box {
+    display : flex;
+    justify-content: space-evenly;
+}
+
+.multiple_histo_container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+.subtitle-band {
+    background-color: #000;
+    color: #fff;
+    padding: 5px;
+}
+
+.parameters__choice__subbox {
+    width: 50%;
+    margin: 1%;
+    padding: 1%;
+}
+
+.customer-id-choice {
+    display : flex;
+    justify-content: space-evenly;
 }
 
 .dropdown {
-    padding-right: 30%;
-    padding-left: 30%;
-    padding-bottom: 5%;
+    padding: 5%;
+    width: 45%;
 }
 
 .auto__checkbox {
