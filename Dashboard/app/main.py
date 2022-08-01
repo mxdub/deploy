@@ -9,7 +9,7 @@ import requests
 # import os
 
 path = 'https://credits-ocr-flaskapi.herokuapp.com/'
-# path = 'http://127.0.0.1:5000/'
+path = 'http://127.0.0.1:5000/'
 
 predicts = requests.get(path + 'predict/').json()
 predicts = pd.DataFrame(predicts)
@@ -33,7 +33,12 @@ server = app.server
 app.title = "Credit Scoring"
 
 app_color = {"graph_bg": "#082255", "graph_line": "#007ACE"}
-min_v_feats, max_v_feats, step_feats = 0, 30, 1
+acceptance_colors = {'Accepted':'#7BCD7B', 'Rejected':'#E06B6B'}
+
+min_v_feats, max_v_feats, step_feats = 0, 20, 1
+
+def logit(x):
+    return np.log(x/(1-x))
                                                 
 app.layout = html.Div(
     [
@@ -50,26 +55,6 @@ app.layout = html.Div(
                     ],
                     className="app__header__desc",
                 ),
-                # html.Div(
-                #     [
-                #         html.A(
-                #             html.Button("SOURCE CODE", className="link-button"),
-                #             href="https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-wind-streaming",
-                #         ),
-                #         html.A(
-                #             html.Button("ENTERPRISE DEMO", className="link-button"),
-                #             href="https://plotly.com/get-demo/",
-                #         ),
-                #         html.A(
-                #             html.Img(
-                #                 src=app.get_asset_url("dash-new-logo.png"),
-                #                 className="app__menu__img",
-                #             ),
-                #             href="https://plotly.com/dash/",
-                #         ),
-                #     ],
-                #     className="app__header__logo",
-                # ),  
             ],
             className="app__header",
         ),
@@ -79,7 +64,7 @@ app.layout = html.Div(
                     parent_className = 'custom-tabs-parents two-thirds column', 
                     className='custom-tabs-container',
                     children=[
-                    dcc.Tab(label='Client infos.', className='custom-tab', children = [
+                    dcc.Tab(label='Client infos. (importance locale)', className='custom-tab', children = [
                         # wind speed
                         html.Div(
                             [
@@ -106,7 +91,13 @@ app.layout = html.Div(
                                 html.Div(
                                     [
                                         html.Div(
-                                            [html.H6('Compare to others', className="graph__title__bis")], 
+                                            [html.H6('Compare to others', className="graph__title__bis"), 
+                                             html.Div([
+                                                html.P('Loans status : '),
+                                                dcc.RadioItems(['Payed', 'Default','All status'], 'All status', inline=True, id='loans_status',
+                                                    labelStyle = {'padding-right':'20px'}),
+                                                ], style={'display': 'flex', 'padding':'5px'})
+                                            ], 
                                             className="subtitle-band"
                                         ),
                                         html.Div(
@@ -210,9 +201,10 @@ app.layout = html.Div(
 @app.callback(
     Output("local-importance", "figure"), 
     Input("id_client", "value"),
-    Input("n_features","value")
+    Input("n_features","value"),
+    Input("threshold_choice", "value")
 )
-def plot_local_importance(id, n_features):
+def plot_local_importance(id, n_features, thresh):
     """
     blabla
     """
@@ -248,8 +240,6 @@ def plot_local_importance(id, n_features):
         increasing = {"marker":{"color":"#E06B6B"}},
     ))
 
-    fig.add_vline(x=shap_base, line_dash = 'dash', line_color = 'grey')
-
     fig.update_layout(    
         dict(
             title = 'Most important features',
@@ -258,6 +248,7 @@ def plot_local_importance(id, n_features):
             font={"color": "#fff"},
             height=500,
             showlegend=False,
+            margin=dict(b=110, t=110),
             xaxis={
                 # "range": [0, 1],
                 "showline": True,
@@ -279,6 +270,65 @@ def plot_local_importance(id, n_features):
         )
     )
 
+    # Classification threshold
+    fig.add_vline(x=logit(thresh),
+        y1 = 1.05, 
+        line_dash = 'dash', 
+        line_color = 'white',
+        yref='paper')
+
+    fig.add_annotation(
+        x=logit(thresh),
+        y=1.0,
+        text= "Threshold",
+        ax=20,
+        ay=-30,
+        bordercolor="#c7c7c7",
+        borderwidth=2,
+        borderpad=4,
+        yref='paper'
+        # bgcolor=acceptance_colors[preds_2.color[focal_idx]],
+    )
+
+    # Baseline shap value
+    fig.add_vline(x=shap_base,
+        y0 = -.1, 
+        line_dash = 'dash', 
+        line_color = 'grey',
+        yref='paper')
+
+    fig.add_annotation(
+        x=shap_base,
+        y=-.25,
+        text= "Mean score",
+        ax=20,
+        ay=-30,
+        bordercolor="#c7c7c7",
+        borderwidth=2,
+        borderpad=4,
+        yref='paper'
+        # bgcolor=acceptance_colors[preds_2.color[focal_idx]],
+    )
+
+    # Customer score
+    fig.add_vline(x=shap_base + sum(feat_imp_summary.shap_values),
+        y0 = -.2, 
+        line_dash = 'dash', 
+        line_color = 'white',
+        yref='paper')
+
+    fig.add_annotation(
+        x=shap_base + sum(feat_imp_summary.shap_values),
+        y=-.4,
+        text= "Customer score",
+        ax=20,
+        ay=-30,
+        bordercolor="#c7c7c7",
+        borderwidth=2,
+        borderpad=4,
+        yref='paper'
+        # bgcolor=acceptance_colors[preds_2.color[focal_idx]],
+    )
     return fig
 
 @app.callback(
@@ -339,9 +389,10 @@ def risk_plot(beta, thresh):
 @app.callback(
     Output("multiple_hist_div", "children"),
     Input("id_client", "value"),
-    Input("n_features","value")
+    Input("n_features","value"),
+    Input("loans_status", "value")
 )
-def populate_hist_div(id, n_features):
+def populate_hist_div(id, n_features, loan_status):
 
     rqst = requests.post(path + 'get_shaps/', {'id':id}).json()
     feat_imp = pd.DataFrame(rqst['shap_data']).sort_values('shap_values', key=abs)
@@ -349,13 +400,21 @@ def populate_hist_div(id, n_features):
     feature_names_list = list(feat_imp_summary.feature_names)
     unscaled_features_dict = {k:list(v.values())[0] for (k,v) in df_unscaled[df_unscaled.SK_ID_CURR == id].to_dict().items() if k in feature_names_list}
 
+    if loan_status == 'Payed':
+        filt = [0]
+    elif loan_status == 'Default':
+        filt = [1]
+    else:
+        filt = [0, 1]
+
     boxes_hist = []
     for feat in reversed(feature_names_list):
         subset = df_unscaled[ ['SK_ID_CURR', feat, 'TARGET'] ]
-        # subset = df_unscaled[ [feat, ] ]
-        
+
         focal_value = subset[subset.SK_ID_CURR == id]
         focal_value = focal_value[feat][0]
+
+        subset = subset[ [True if x in filt else False for x in subset.TARGET] ]
 
         fig = px.histogram(subset, x = feat, color="TARGET", nbins = 50, histnorm = 'percent', opacity = 0.5, 
                            barmode="overlay", color_discrete_map = {0:'#7BCD7B',1:'#E06B6B'})
@@ -399,9 +458,10 @@ def populate_hist_div(id, n_features):
 )
 def hist_probs(id, threshold):
     """
-    blabla
+    Return histogram of predicted values (in logit scale) for all customers. 
+    Colors represent acceptance status based on predicted probs from the model, and according to the threshold define in "Gestion du risque" tab.
+    The white dashed line, represents predicted value for the choosen customer. 
     """
-    
 
     try:
         focal_idx = list(predicts.SK_ID_CURR).index(id)
@@ -414,22 +474,31 @@ def hist_probs(id, threshold):
 
     preds_2 = predicts.copy()
 
-    def logit(x):
-        return np.log(x/(1-x))
-
-    preds_2.probs = [logit(x) for x in predicts.probs]
-    # preds_2.probs = [(x) for x in predicts.probs]
+    # preds_2.probs = [logit(x) for x in predicts.probs]
+    preds_2.probs = [(x) for x in predicts.probs]
     
-    preds_2['color'] = preds_2.probs < logit(threshold)
-    # preds_2['color'] = preds_2.probs < (threshold)
+    # preds_2['color'] = preds_2.probs < logit(threshold)
+    preds_2['color'] = preds_2.probs < (threshold)
+
     preds_2.color = ['Accepted' if x else 'Rejected' for x in preds_2.color]
 
     # fig = px.histogram(preds_2, x = 'probs', color="color", histnorm = 'percent', nbins = 50)
-    fig = px.histogram(preds_2, x = 'probs', color="color", nbins = 100, color_discrete_map = {'Accepted':'#7BCD7B',
-                                                                                               'Rejected':'#E06B6B'})
+    fig = px.histogram(preds_2, x = 'probs', color="color", nbins = 100, color_discrete_map = acceptance_colors)
 
     
     fig.add_vline(x=preds_2.probs[focal_idx], line_dash = 'dash', line_color = 'white')
+
+    fig.add_annotation(
+        x=preds_2.probs[focal_idx],
+        y=3500,
+        text=preds_2.color[focal_idx] + ' ({:.0f}%) '.format(100*predicts.probs[focal_idx]),
+        ax=20,
+        ay=-30,
+        bordercolor="#c7c7c7",
+        borderwidth=2,
+        borderpad=4,
+        bgcolor=acceptance_colors[preds_2.color[focal_idx]],
+    )
 
     fig.update_layout(    
         dict(
@@ -437,14 +506,17 @@ def hist_probs(id, threshold):
             paper_bgcolor=app_color["graph_bg"],
             font={"color": "#fff"},
             height=300,
+            legend_title="",
             xaxis={
-                "range": [-5, 3],
+                # "range": [-5, 3],
+                "range": [0, 1],
                 "showline": True,
                 "zeroline": False,
                 "fixedrange": True,
                 # "tickvals": [0, 50, 100, 150, 200],
                 # "ticktext": ["200", "150", "100", "50", "0"],
-                "title": "Success prob.",
+                # "title": "Score (logit scale)",
+                "title": "Default prob.",
             },
             yaxis={
                 # "range": [0,100,],
