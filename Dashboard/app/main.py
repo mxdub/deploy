@@ -6,10 +6,10 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import requests
-import os
+# import os
 
 path = 'https://credits-ocr-flaskapi.herokuapp.com/'
-path = 'http://127.0.0.1:5000/'
+# path = 'http://127.0.0.1:5000/'
 
 predicts = requests.get(path + 'predict/').json()
 predicts = pd.DataFrame(predicts)
@@ -21,7 +21,7 @@ sk_id_curr = sorted(list(requests.get(path + 'get_idx/').json().values()))
 
 stats = pd.DataFrame(requests.get(path + 'get_stats/').json())
 
-GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 5000)
+# GRAPH_INTERVAL = os.environ.get("GRAPH_INTERVAL", 5000)
 
 app = Dash(
     __name__,
