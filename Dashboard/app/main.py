@@ -9,7 +9,7 @@ import requests
 # import os
 
 path = 'https://credits-ocr-flaskapi.herokuapp.com/'
-path = 'http://127.0.0.1:5000/'
+# path = 'http://127.0.0.1:5000/'
 
 predicts = requests.get(path + 'predict/').json()
 predicts = pd.DataFrame(predicts)
