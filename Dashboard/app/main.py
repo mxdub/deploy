@@ -356,12 +356,19 @@ def risk_plot(beta, thresh):
 
     fig.add_vline(x=thresh, line_dash = 'dash', line_color = 'white', line_width=3.5)
 
+    newnames = {'fn' : 'False negatives', 
+                'fp' : 'False positives',
+                'beta' : 'F-Score'}
+    
+    fig.for_each_trace(lambda t: t.update(name = newnames[t.name]))
+
     fig.update_layout(    
         dict(
             plot_bgcolor=app_color["graph_bg"],
             paper_bgcolor=app_color["graph_bg"],
             font={"color": "#fff"},
             height=400,
+            legend_title="",
             xaxis={
                 "range": [0, 1],
                 "showline": True,
@@ -381,6 +388,13 @@ def risk_plot(beta, thresh):
                 "nticks": 6,
                 "title":'',
             },
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
         )
     )
 
