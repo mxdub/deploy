@@ -504,7 +504,7 @@ def hist_probs(id, threshold):
 
     fig.add_annotation(
         x=preds_2.probs[focal_idx],
-        y=3500,
+        y=1500,
         text=preds_2.color[focal_idx] + ' ({:.0f}%) '.format(100*predicts.probs[focal_idx]),
         ax=20,
         ay=-30,
