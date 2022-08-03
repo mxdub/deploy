@@ -129,7 +129,7 @@ app.layout = html.Div(
                                                     html.H6("Selected threshold", 
                                                         className="parameters__style"),
                                                     html.Div([ dcc.Slider(id="threshold_choice", 
-                                                        min = 0, max = 1, value = 0.08,
+                                                        min = 0, max = 1, value = 0.34,
                                                         updatemode="drag",
                                                         tooltip={"placement": "bottom", "always_visible": True}) ]),
                                                 ], className="parameters__choice__subbox"),
