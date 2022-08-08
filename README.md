@@ -21,7 +21,7 @@ Code (app/main.py) et données pour l'API (https://credits-ocr-flaskapi.herokuapp
  
 ## Dossier Dashboard
 
-Dashboard construit avec Dash (code app/main.py, et css associé dans le sous-dossier app/assets/) à partir d'un template pré-existant, adapté au problème. Le dashboard est déployé à l'adresse suivante : https://credits-ocr-dashboard.herokuapp.com/
+Dashboard construit avec Dash (code app/main.py, et css associé dans le sous-dossier app/assets/) à partir d'un template pré-existant (https://dash.gallery/dash-wind-streaming/) et modifié pour le problème. Le dashboard est déployé à l'adresse suivante : https://credits-ocr-dashboard.herokuapp.com/
 
 Il permet de sélectionner un client (Customer ID) et afficher son score (et la probabilité de défaut selon le modèle). Diverses informations sont égalements visibles : (i) l'importance locale des différentes *features* (vert : favorable, rouge : défavorable) - il est possible de choisir le nombre de *features* à montrer. Le panel suivant présente les distributions de valeurs pour chacune des *features* importantes, et permet de distinguer les clients ayant fait défaut ou non. 
 
