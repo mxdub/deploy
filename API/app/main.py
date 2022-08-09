@@ -63,11 +63,11 @@ def test():
             <br/>
             Available Endpoints (through HTTP request):
             <ul>
-                <li>/get_data/</li> : return unscaled dataset
-                <li>/get_idx/</li> : return IDs list
-                <li>/predict/</li> : return predictions
-                <li>/get_stats/</li> : return model statistics (fn, fp, etc.)
-                <li>/get_shaps/ (POST request)</li> : return Shapleys values for one user (using 'id' variable of POST request)
+                <li>/get_data/: return unscaled dataset</li> 
+                <li>/get_idx/ : return IDs list</li> 
+                <li>/predict/ : return predictions</li> 
+                <li>/get_stats/ : return model statistics (fn, fp, etc.)</li> 
+                <li>/get_shaps/ (POST request) : return Shapleys values for one user (using 'id' variable of POST request)</li> 
             </ul>
 
             <br/>
