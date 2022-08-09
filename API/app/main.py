@@ -59,7 +59,20 @@ stats = fp_fn_tp_tn(probs, target)
 # Define endpoints
 @app.route('/')
 def test():
-    return "Welcome to API test ! "
+    return """Welcome to the API for Credit Scoring ! <br/>
+            <br/>
+            Available Endpoints (through HTTP request):
+            <ul>
+                <li>/get_data/</li> : return unscaled dataset
+                <li>/get_idx/</li> : return IDs list
+                <li>/predict/</li> : return predictions
+                <li>/get_stats/</li> : return model statistics (fn, fp, etc.)
+                <li>/get_shaps/ (POST request)</li> : return Shapleys values for one user (using 'id' variable of POST request)
+            </ul>
+
+            <br/>
+            Dashboard can be find <a href="https://credits-ocr-dashboard.herokuapp.com/">here</a>.
+            """
 
 @app.route('/get_data/')
 def get_df():
