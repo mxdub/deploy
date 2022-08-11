@@ -66,6 +66,7 @@ def test():
                 <li>/get_data/: return unscaled dataset</li> 
                 <li>/get_idx/ : return IDs list</li> 
                 <li>/predict/ : return predictions</li> 
+                <li>/predict_one/?id=XXX : return prediction for one client (specify by XXX in URL)</li>
                 <li>/get_stats/ : return model statistics (fn, fp, etc.)</li> 
                 <li>/get_shaps/ (POST request) : return Shapleys values for one user (using 'id' variable of POST request)</li> 
             </ul>
@@ -87,6 +88,21 @@ def get_predictions():
     probs_dt = pd.DataFrame({ 'SK_ID_CURR' : sk_id_curr,
                            'probs' : probs })
     return probs_dt.to_json()
+
+@app.route('/predict_one/')
+def get_one_pred():
+    args = request.args
+    id_ = args.get("id", type=int)
+
+    if id_ is None:
+        return 'You must provide an ID !'
+
+    id_pos = np.where(id_ == sk_id_curr)
+
+    if len(id_pos[0]) == 0:
+        return 'ID doesn\'t exist'
+
+    return "Default prob for {} is : {}".format(id_, probs[id_pos[0][0]])
 
 @app.route('/get_stats/')
 def get_acc_stats():

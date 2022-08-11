@@ -10,6 +10,7 @@ Code (app/main.py) et données pour l'API (https://credits-ocr-flaskapi.herokuapp
   * /get_data : renvoi l'ensemble des données non-standardisées (DataFrame au format json)
   * /get_idx : renvoi l'ensemble des ID (liste au format json)
   * /predict : renvoi l'ensemble des prédictions (DataFrame au format json)
+  * /predict_one?id=XXX : renvoi la prédiction pour un client (donner ID via URL : e.g., https://credits-ocr-flaskapi.herokuapp.com/predict_one/?id=283409)
   * /get_stats : renvoi les statistiques (fn, fp, etc.) du classifieur en fonction du seuil (DataFrame au format json)
   * /get_shaps (POST request!) : renvoi les valeurs de Shapleys pour un individu (variable 'id' de la POST request HTTP)
 
