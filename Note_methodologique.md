@@ -71,5 +71,3 @@ Il pourrait également être intéressant de produire une métrique considérant
 D'un point de vue méthode, et notamment du dashboard, il aurait pu être pertinent de permettre de regrouper les différentes valeurs d'une variable catégorielle pour les scores d'importances locales (tel que réalisé dans le notebook d'analyse). 
 
 Il serait également intéressant d'utiliser l'ensemble des sources d'informations (i.e. tous les fichiers fournis) afin d'évaluer leur pertinence pour améliorer notre classifieur. A noter que les temps de calcul nécessaires pour le choix du modèle de classification et l'optimisation des hyper-paramètres seraient alors bien supérieurs. 
-
-blabla
